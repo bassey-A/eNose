@@ -10,6 +10,12 @@
 #include <QDataStream>
 #include <QTableView>
 #include <QStandardItemModel>
+#include <QMainWindow>
+#include <QChartView>
+#include <QLineSeries>
+#include <QSplineSeries>
+
+#include "enosegraph.h"
 
 typedef struct {
     uint64_t timeUnits;
@@ -29,6 +35,20 @@ class ResultsViewer : public QObject
     Q_OBJECT
 public:
     explicit ResultsViewer(QBluetoothDeviceInfo *dev, QObject *parent = nullptr);
+    void processing(uint16_t *sval, uint16_t *pval, uint16_t *ptime, QLineSeries *series);
+    void setup();
+
+    QSplineSeries *s2600 = new QSplineSeries();
+    QSplineSeries *s2602 = new QSplineSeries();
+    QSplineSeries *s2603 = new QSplineSeries();
+    QLineSeries *s2610 = new QLineSeries();
+    QLineSeries *s2611 = new QLineSeries();
+    QLineSeries *s2620 = new QLineSeries();
+    QLineSeries *sm3 = new QLineSeries();
+    QLineSeries *sm7 = new QLineSeries();
+    QLineSeries *sm135 = new QLineSeries();
+
+    QChart *chart = new QChart();
 
 public slots:
     void attemptConnection();
@@ -39,6 +59,7 @@ public slots:
     void processReadings();
     void reset();
     void stopReadings();
+    void displayGraph();
     /*void charRead();
     void charWritten();
     void errorRorW();
@@ -59,9 +80,14 @@ private:
     QLowEnergyCharacteristic *readNose;
     QLowEnergyCharacteristic *writeNose;
     QLowEnergyService *service = nullptr;
+
+
+
+
     QList<QLowEnergyService> myServices;
     QList<QLowEnergyCharacteristic> myCharacteristics;
     QList<QBluetoothUuid> uuids;
+    QList<QStandardItem*> entry;
     QByteArray readArray;
     QByteArray writeArray;
     QLowEnergyDescriptor descriptor;

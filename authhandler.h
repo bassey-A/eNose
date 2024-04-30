@@ -22,10 +22,11 @@ public:
 
 public slots:
     void networkReplyReadyRead();
-    void performAuthenticatedDatabaseCall();
+    void getData();
 
 signals:
     void userSignedIn();
+    void dataReady(QJsonDocument);
 
 private:
     void performPOST(const QString & url, const QJsonDocument & payload);
@@ -34,6 +35,7 @@ private:
     QNetworkReply *m_networkReply;
     QString m_idToken;
     QString m_apiKey;
+    QJsonDocument dbEntries;
 };
 
 #endif // AUTHHANDLER_H

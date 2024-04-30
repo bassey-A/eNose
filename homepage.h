@@ -32,6 +32,7 @@ public:
     ~Homepage();
 
 public slots:
+    void requestData();
     void signIn();
     void signInSuccess();
     void foundDevice(QBluetoothDeviceInfo dev);
@@ -43,6 +44,7 @@ public slots:
     void finishedRead();
     void createDbEntry();
     void readingsProcessed();
+    void getData(QJsonDocument data);
 
 private slots:
     QString fetchKey();
@@ -50,6 +52,7 @@ private slots:
 signals:
     void run();
     void reset();
+    void showGraph();
 
 private:
     Ui::Homepage *ui;

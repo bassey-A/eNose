@@ -49,20 +49,20 @@ void AuthHandler::networkReplyReadyRead()
     parseResponse( response );
 }
 
-void AuthHandler::performAuthenticatedDatabaseCall()
+void AuthHandler::getData()
 {
     QString endPoint = "https://enose-hkr24-default-rtdb.europe-west1.firebasedatabase.app/SensorReadings.json?auth=" + m_idToken;
-    //QString endPoint = "https://enose-hkr24-default-rtdb.europe-west1.firebasedatabase.app/Dogs.json";
     m_networkReply = m_networkAccessManager->get( QNetworkRequest(QUrl(endPoint)));
-    connect( m_networkReply, &QNetworkReply::readyRead, this, &AuthHandler::networkReplyReadyRead );
+    connect(m_networkReply, &QNetworkReply::readyRead, this, &AuthHandler::networkReplyReadyRead);
+
 }
 
 void AuthHandler::performPOST(const QString &url, const QJsonDocument &payload)
 {
-    QNetworkRequest newRequest( (QUrl( url )) );
-    newRequest.setHeader( QNetworkRequest::ContentTypeHeader, QString( "application/json"));
+    QNetworkRequest newRequest((QUrl(url)));
+    newRequest.setHeader(QNetworkRequest::ContentTypeHeader, QString( "application/json"));
     m_networkReply = m_networkAccessManager->post(newRequest, payload.toJson());
-    connect( m_networkReply, &QNetworkReply::readyRead, this, &AuthHandler::networkReplyReadyRead );
+    connect(m_networkReply, &QNetworkReply::readyRead, this, &AuthHandler::networkReplyReadyRead);
 }
 
 void AuthHandler::parseResponse(const QByteArray &response)
@@ -81,7 +81,11 @@ void AuthHandler::parseResponse(const QByteArray &response)
         emit userSignedIn();
     }
     else
-        qDebug() << "The response was: " << response;
+    {
+        //qDebug() << "The response was: " << response;
+        dbEntries = jsonDocument;
+        emit dataReady(dbEntries);
+    }
 }
 
 void AuthHandler::add_to_db(QVariantMap readings)
@@ -89,7 +93,7 @@ void AuthHandler::add_to_db(QVariantMap readings)
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(readings);
     QNetworkRequest add_to_db_req (QUrl("https://enose-hkr24-default-rtdb.europe-west1.firebasedatabase.app/SensorReadings.json?auth=" + m_idToken));
     add_to_db_req.setHeader(QNetworkRequest::ContentTypeHeader, QString("application/json"));
-    m_networkAccessManager->put(add_to_db_req, jsonDoc.toJson()); // use put to update, post to write
+    m_networkAccessManager->post(add_to_db_req, jsonDoc.toJson()); // use put to update, post to write
 }
 
 

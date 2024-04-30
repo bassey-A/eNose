@@ -13,20 +13,28 @@ Homepage::Homepage(QWidget *parent)
     ui->run->setVisible(false);
     ui->reset->setVisible(false);
     ui->postButton->setVisible(false);
+    ui->fetchData->setVisible(false);
     authhandler = new AuthHandler(fetchKey());
     //btfinder = new BTFinder();
     //connect(authhandler, &AuthHandler::userSignedIn, btfinder, &BTFinder::startSearch);
     connect(authhandler, SIGNAL(userSignedIn()), this, SLOT(signInSuccess()));
+    connect(authhandler, &AuthHandler::dataReady, this, &Homepage::getData);
     connect(ui->signInButton, SIGNAL(clicked(bool)), this, SLOT(signIn()));
     connect(ui->run, SIGNAL(clicked(bool)), this, SLOT(startRun()));
     connect(ui->reset, SIGNAL(clicked(bool)), this, SLOT(resetNose()));
     connect(ui->postButton, SIGNAL(clicked(bool)), this, SLOT(createDbEntry()));
+    connect(ui->fetchData, SIGNAL(clicked(bool)), this, SLOT(requestData()));
     QThread::currentThread()->setObjectName("HomepageThread");
 }
 
 Homepage::~Homepage()
 {
     delete ui;
+}
+
+void Homepage::requestData()
+{
+    authhandler->getData();
 }
 
 void Homepage::signIn()
@@ -81,6 +89,7 @@ void Homepage::foundDevice(QBluetoothDeviceInfo dev)
         connect(viewer, &ResultsViewer::readingEnded, this, &Homepage::finishedRead);
         connect(viewer, &ResultsViewer::readingsProcessed, this, &Homepage::readingsProcessed);
         connect(this, &Homepage::reset, viewer, &ResultsViewer::reset);
+        connect(this, &Homepage::showGraph, viewer, &ResultsViewer::displayGraph);
     }
 }
 
@@ -104,16 +113,19 @@ void Homepage::readyToRun()
     ui->beerName->setVisible(true);
     ui->run->setVisible(true);
     ui->reset->setVisible(true);
+    ui->fetchData->setVisible(true);
 }
 
 void Homepage::startRun()
 {
+    ui->peaks->clear();
+    ui->beerName->clear();
     ui->info->setText("Running");
     viewer->startRun();
     ui->table->setModel(viewer->model);
     connect(viewer->service, SIGNAL(characteristicChanged(QLowEnergyCharacteristic,QByteArray)),
             viewer, SLOT(processReadings()));
-    QTimer::singleShot(15000, viewer, &ResultsViewer::stopReadings);
+    QTimer::singleShot(10000, viewer, &ResultsViewer::stopReadings);
 }
 
 void Homepage::resetNose()
@@ -129,7 +141,7 @@ void Homepage::finishedRead()
 
 void Homepage::createDbEntry()
 {
-    QVariantMap mq135;
+    /*QVariantMap mq135;
     mq135["value"] = viewer->peakValues.mq135;
     mq135["time"] = viewer->peakTimes.mq135;
     QVariantMap mq3;
@@ -166,8 +178,27 @@ void Homepage::createDbEntry()
     beer["TGS2603"] = tgs2603;
     beer["TGS2610"] = tgs2610;
     beer["TGS2611"] = tgs2611;
-    beer["TGS2620"] = tgs2620;
+    beer["TGS2620"] = tgs2620;*/
+
+    QVariantMap beer;
+    beer["Beer"] = ui->beerName->text();
+    beer["tgs2600_value"] = viewer->peakValues.tgs2600;
+    beer["tgs2600_time"] = viewer->peakTimes.tgs2600;
+    beer["tgs2602_value"] = viewer->peakValues.tgs2602;
+    beer["tgs2602_time"] = viewer->peakTimes.tgs2602;
+    beer["tgs2603_value"] = viewer->peakValues.tgs2603;
+    beer["tgs2603_time"] = viewer->peakTimes.tgs2603;
+    beer["tgs2610_value"] = viewer->peakValues.tgs2610;
+    beer["tgs2610_time"] = viewer->peakTimes.tgs2610;
+    beer["tgs2611_value"] = viewer->peakValues.tgs2611;
+    beer["tgs2611_time"] = viewer->peakTimes.tgs2611;
+    beer["tgs2620_value"] = viewer->peakValues.tgs2620;
+    beer["tgs2620_time"] = viewer->peakTimes.tgs2620;
     authhandler->add_to_db(beer);
+    emit reset();
+    ui->beerName->clear();
+    ui->info->setText("posted to database");
+    emit showGraph();
 }
 
 void Homepage::readingsProcessed()
@@ -178,6 +209,16 @@ void Homepage::readingsProcessed()
                        + "MQ3 -> " + QString::number(viewer->peakValues.mq3) + " " + "MQ7 -> " + QString::number(viewer->peakValues.mq7) + " "
                        + "MQ135 -> " + QString::number(viewer->peakValues.mq135) + " " + "TGS2611 -> " + QString::number(viewer->peakValues.tgs2611) + " "
                        + "TGS2620 -> " + QString::number(viewer->peakValues.tgs2620));
+}
+
+void Homepage::getData(QJsonDocument data)
+{
+    qDebug() << data;
+    QFile file("C:\\Users\\basee\\OneDrive\\Documents\\NewControlApp\\data.json");
+    if(!file.open(QIODevice::WriteOnly))
+        qWarning() << "Unable to create file";
+    file.write(data.toJson());
+    file.close();
 }
 
 QString Homepage::fetchKey()
